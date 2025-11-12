@@ -1,29 +1,33 @@
-const express = require('express');
-const app = express();
+import express from "express";
 
+const app = express();
 app.use(express.json());
 
-app.post('/order', (req, res) => {
-	const order = req.body;
-	console.log('BOMBOCLAT', order);
-	setTimeout(() => {
-    		console.log(`${order.id}: Restaurace připravuje`);
+app.post("/order", (req, res) => {
+  	const order = req.body;
+  	console.log(`Přijata objednávka ${order.id}`);
 
-    		setTimeout(() => {
-      			console.log(`${order.id}: Rozváží se`);
+  	res.status(202).json({ message: "Objednávka přijata", id: order.id });
 
-      			setTimeout(() => {
-        				console.log(`${order.id}: Doručeno`);
+  	const sendStatus = async (status) => {
+    		try {
+      			await fetch(order.callbackUrl, {
+        		method: "POST",
+        		headers: { "Content-Type": "application/json" },
+        		body: JSON.stringify({ id: order.id, status }),
+      		});
+      		console.log(`Odesláno restauraci: ${order.id} — ${status}`);
+    		} catch (err) {
+      			console.error(`Chyba při odesílání webhooku (${status}):`, err);
+    		}
+	};
 
-        				res.status(200).json({ id: order.id, status: 'Doručeno' });
-
-      			}, 5000);
-
-    		}, 5000);
-
-  	}, 5000);
+  	setTimeout(() => sendStatus("Restaurace připravuje"), 5000);
+  	setTimeout(() => sendStatus("Rozváží se"), 10000);
+  	setTimeout(() => sendStatus("Doručeno"), 15000);
 });
 
 app.listen(3000, () => {
-	console.log('BOMBOCLAT ON localhost:3000');
+  	console.log("Courier runs on http://localhost:3000");
 });
+
